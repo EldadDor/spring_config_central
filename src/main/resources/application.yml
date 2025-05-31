@@ -1,0 +1,16 @@
+server:
+  port: 8888
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: custom-repo # Keep this if you put @Profile("custom-repo") on ConfigServerConfiguration
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/your-org/your-config-repo.git
+          # Add credentials if needed
+          # username: your-username
+          # password: your-password
