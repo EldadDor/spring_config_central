@@ -1,4 +1,4 @@
-package com.edx.spring.config;
+package com.edx.spring.config.central.config;
 
 import com.edx.spring.config.central.CustomEntryPointEnvironmentRepository;
 import io.micrometer.observation.ObservationRegistry;
