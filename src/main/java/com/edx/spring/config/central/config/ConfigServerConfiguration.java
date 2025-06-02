@@ -1,6 +1,7 @@
 package com.edx.spring.config.central.config;
 
 import com.edx.spring.config.central.CustomEntryPointEnvironmentRepository;
+import com.edx.spring.config.central.loader.ConfigResourceProvider;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.ObservationEnvironmentRepositoryWrapper;
@@ -9,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+
+import java.util.List;
 
 
 @Configuration
@@ -22,7 +25,7 @@ public class ConfigServerConfiguration {
     }
 
     @Bean(name = "CustomEntryPointEnvironmentRepository")
-    public CustomEntryPointEnvironmentRepository customEntryPointEnvironmentRepository() {
-        return new CustomEntryPointEnvironmentRepository(); // This will now be the only way it's created
+    public CustomEntryPointEnvironmentRepository customEntryPointEnvironmentRepository(List<ConfigResourceProvider> providers) {
+        return new CustomEntryPointEnvironmentRepository(providers); // This will now be the only way it's created
     }
 }
