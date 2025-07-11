@@ -2,10 +2,12 @@ server:
   port: 8888
 
 spring:
+  application:
+    name: spring-config-server
   main:
     allow-bean-definition-overriding: true
   profiles:
-    active: custom-repo # Keep this if you put @Profile("custom-repo") on ConfigServerConfiguration
+    active: custom-repo
   cloud:
     config:
       server:
@@ -14,6 +16,24 @@ spring:
           # Add credentials if needed
           # username: your-username
           # password: your-password
+        # You can also configure multiple git repositories
+        composite:
+          - type: git
+            uri: https://github.com/your-org/your-config-repo.git
+          - type: git
+            uri: https://github.com/your-org/another-config-repo.git
+
+# Custom configuration for your providers
+config:
+  providers:
+    nexl:
+      enabled: true
+      base-url: http://nexl:8181/deployment/javaserver
+    git:
+      enabled: true
+      fallback: true
+
 #logging:
 #  level:
 #    org.springframework: DEBUG
+#    com.edx.spring.config: DEBUG

@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: test-app
+  config:
+    import: "configserver:http://localhost:8888"
+  profiles:
+    active: development
+  cloud:
+    config:
+      uri: http://localhost:8888
+      label: nexl  # This will be used to trigger your NexlConfigResourceProvider
+      fail-fast: true
+      retry:
+        initial-interval: 1000
+        max-attempts: 6
+        multiplier: 1.1
+        max-interval: 2000
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,refresh,env
+  endpoint:
+    health:
+      show-details: always

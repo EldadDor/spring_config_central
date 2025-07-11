@@ -11,24 +11,22 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>config-central-server</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>config-central-server</name>
-    <description>Spring Cloud Config Server</description>
-
+    <artifactId>config-central-client</artifactId>
+    <name>config-central-client</name>
+    <description>Spring Cloud Config client</description>
 
     <dependencies>
         <!-- This brings in the Config Server functionality, including the Git repository support -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-config-server</artifactId>
+            <artifactId>spring-cloud-config-client</artifactId>
         </dependency>
 
     </dependencies>
 
-    <build>
+    <!--<build>
         <plugins>
-            <!-- This plugin is required to package the application as an executable JAR -->
+            &lt;!&ndash; This plugin is required to package the application as an executable JAR &ndash;&gt;
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
@@ -41,7 +39,7 @@
                     </excludes>
                 </configuration>
             </plugin>
-            <!-- This plugin configuration is needed to make Lombok work correctly with Maven -->
+            &lt;!&ndash; This plugin configuration is needed to make Lombok work correctly with Maven &ndash;&gt;
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -50,12 +48,12 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> <!-- Version is managed by spring-boot-starter-parent -->
+                            <version>${lombok.version}</version> &lt;!&ndash; Version is managed by spring-boot-starter-parent &ndash;&gt;
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>
     </build>
-
+-->
 </project>

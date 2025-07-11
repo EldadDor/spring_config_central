@@ -1,7 +1,7 @@
-package com.edx.spring.config.central.config;
+package com.edx.spring.config.central.server.config;
 
-import com.edx.spring.config.central.CustomEntryPointEnvironmentRepository;
-import com.edx.spring.config.central.loader.ConfigResourceProvider;
+import com.edx.spring.config.central.server.CustomEntryPointEnvironmentRepository;
+import com.edx.spring.config.central.server.loader.ConfigResourceProvider;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.ObservationEnvironmentRepositoryWrapper;
