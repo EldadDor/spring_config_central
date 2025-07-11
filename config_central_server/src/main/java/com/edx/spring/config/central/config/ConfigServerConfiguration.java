@@ -5,17 +5,14 @@ import com.edx.spring.config.central.loader.ConfigResourceProvider;
 import io.micrometer.observation.ObservationRegistry;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.ObservationEnvironmentRepositoryWrapper;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.*;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 
 import java.util.List;
 
-
 @Configuration
-@Profile("custom-repo") // Ensures this config is active only when 'custom-repo' profile is active
+@Profile("custom-repo")
 public class ConfigServerConfiguration {
 
     @Bean

@@ -14,3 +14,6 @@ spring:
           # Add credentials if needed
           # username: your-username
           # password: your-password
+#logging:
+#  level:
+#    org.springframework: DEBUG
