@@ -5,11 +5,19 @@
 
     <!-- Use a stable, recent version of Spring Boot. This manages versions for many common dependencies. -->
     <parent>
-		<groupId>com.edx.spring.config</groupId>
-		<artifactId>spring-config-central-parent</artifactId>
-		<version>1.0.0-SNAPSHOT</version>
+        <groupId>com.edx.spring.config</groupId>
+        <artifactId>spring-config-central-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
+
+    <properties>
+        <!-- Prefer release over source/target for consistent stdlib + bytecode -->
+        <maven.compiler.release>21</maven.compiler.release>
+        <!-- Optional: keep these if other plugins read them; release still governs -->
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
 
     <artifactId>config-central-server</artifactId>
     <version>1.0.0-SNAPSHOT</version>
@@ -41,6 +49,7 @@
                     </excludes>
                 </configuration>
             </plugin>
+
             <!-- This plugin configuration is needed to make Lombok work correctly with Maven -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -50,9 +59,13 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> <!-- Version is managed by spring-boot-starter-parent -->
+                            <version>${lombok.version}
+                            </version> <!-- Version is managed by spring-boot-starter-parent -->
                         </path>
                     </annotationProcessorPaths>
+                    <jdkToolchain>
+                        <version>21</version>
+                    </jdkToolchain>
                 </configuration>
             </plugin>
         </plugins>
