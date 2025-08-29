@@ -11,18 +11,21 @@ import org.springframework.core.annotation.Order;
 
 import java.util.List;
 
+
 @Configuration
 @Profile("custom-repo")
 public class ConfigServerConfiguration {
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE) // Add this line
-    public EnvironmentRepository environmentRepository(ObservationRegistry observationRegistry, CustomEntryPointEnvironmentRepository customEntryPointEnvironmentRepository) {
-        return ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, customEntryPointEnvironmentRepository);
+    @Order(Ordered.HIGHEST_PRECEDENCE)
+    public EnvironmentRepository environmentRepository(
+            ObservationRegistry observationRegistry,
+            List<ConfigResourceProvider> providers
+    ) {
+        // Create the delegate here so it's NOT registered as its own EnvironmentRepository bean
+        CustomEntryPointEnvironmentRepository delegate = new CustomEntryPointEnvironmentRepository(providers);
+        return ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, delegate);
     }
 
-    @Bean(name = "CustomEntryPointEnvironmentRepository")
-    public CustomEntryPointEnvironmentRepository customEntryPointEnvironmentRepository(List<ConfigResourceProvider> providers) {
-        return new CustomEntryPointEnvironmentRepository(providers); // This will now be the only way it's created
-    }
 }
+
