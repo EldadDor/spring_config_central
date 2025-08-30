@@ -1,11 +1,11 @@
 package com.edx.spring.config.central.server.loader;
 
+import com.edx.spring.config.central.server.KNexlService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URLDecoder;
@@ -13,15 +13,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.net.URLEncoder;
+
 @Component
 @Slf4j
 public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourceProvider {
 
-	private final RestTemplate restTemplate = new RestTemplate();
 	private final ObjectMapper objectMapper = new ObjectMapper();
+	private  final KNexlService nexlService = new KNexlService();
 
 	@Value("${config.providers.nexl.enabled:true}")
 	private boolean enabled;
+
 
 	@Value("${config.providers.nexl.base-url:http://nexl:8181}")
 	private String baseUrl;
@@ -40,27 +43,41 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 			log.info("Nexl provider is disabled");
 			return new HashMap<>();
 		}
-
 		try {
-			String nexlUrl;
+			String path;
+			String expression;
 
 			if (request != null) {
-				// Build URL from actual HTTP request
-				nexlUrl = buildNexlUrlFromHttpRequest(request);
-				log.info("Built Nexl URL from HTTP request: {}", nexlUrl);
+				// Extract path and expression from HTTP request
+				String[] pathAndExpression = extractPathAndExpressionFromHttpRequest(request);
+				path = pathAndExpression[0];
+				expression = pathAndExpression[1];
+				log.info("Extracted from HTTP request - path: {}, expression: {}", path, expression);
 			} else {
-				// Fallback to parameter-based URL building
-				nexlUrl = buildNexlUrlFromParameters(application, profile);
-				log.info("Built Nexl URL from parameters: {}", nexlUrl);
+				// Fallback to parameter-based path and expression extraction
+				String[] pathAndExpression = extractPathAndExpressionFromParameters(application, profile);
+				path = pathAndExpression[0];
+				expression = pathAndExpression[1];
+				log.info("Extracted from parameters - path: {}, expression: {}", path, expression);
 			}
 
-			String response = restTemplate.getForObject(nexlUrl, String.class);
+			KNexlService.NexlResult nexlResult = nexlService.callNexlServerForJava(path, expression);
 
-			if (response != null && !response.trim().isEmpty()) {
-				return parseNexlResponse(response, application, profile, request);
+			if (nexlResult.isSuccess()) {
+				String response = nexlResult.getData();
+				log.info("Nexl server response body length: {}", response != null ? response.length() : 0);
+
+				if (response != null && !response.trim().isEmpty()) {
+					log.debug("Nexl server response body: {}", response);
+					return parseNexlResponse(response, application, profile, request);
+				} else {
+					log.warn("No configuration found for path: {} with expression: {}", path, expression);
+					return new HashMap<>();
+				}
 			} else {
-				log.warn("No configuration found at Nexl URL: {}", nexlUrl);
-				return new HashMap<>();
+				Throwable failure = nexlResult.getException();
+				log.error("Failed to load configuration from Nexl server: {}",
+						failure != null ? failure.getMessage() : "Unknown error", failure);
 			}
 
 		} catch (Exception e) {
@@ -70,6 +87,135 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 		return new HashMap<>();
 	}
 
+
+	private String[] extractPathAndExpressionFromHttpRequest(HttpServletRequest request) {
+		String requestURI = request.getRequestURI();
+		String queryString = request.getQueryString();
+
+		log.info("Processing request URI: {}", requestURI);
+		log.info("Query string: {}", queryString);
+
+		// Check if there's a 'url' parameter - this is the primary case
+		String urlParam = request.getParameter("url");
+		if (urlParam != null) {
+			return splitUrlParameterIntoPathAndExpression(urlParam);
+		}
+
+		// Fallback to path-based URL building
+		return extractPathAndExpressionFromRequestPath(requestURI, queryString);
+	}
+
+	private String[] splitUrlParameterIntoPathAndExpression(String urlParam) {
+		log.info("Found URL parameter: {}", urlParam);
+
+		// Split on "expression="
+		int expressionIndex = urlParam.indexOf("expression=");
+		if (expressionIndex == -1) {
+			// No expression parameter, return path only
+			return new String[]{urlParam, ""};
+		}
+
+		// Split the URL at the expression parameter
+		String path = urlParam.substring(0, expressionIndex - 1); // Remove the "?" before "expression="
+		String expressionPart = urlParam.substring(expressionIndex + "expression=".length());
+
+		// Find the end of the expression value (next & or end of string)
+		int nextParamIndex = expressionPart.indexOf('&');
+		String expression = nextParamIndex != -1 ?
+				expressionPart.substring(0, nextParamIndex) :
+				expressionPart;
+
+		// URL decode the expression since it comes from the URL parameter
+		String decodedExpression = URLDecoder.decode(expression, StandardCharsets.UTF_8);
+
+		log.info("Split URL - path: {}, expression: {}", path, decodedExpression);
+		return new String[]{path, decodedExpression};
+	}
+
+	private String[] extractPathAndExpressionFromRequestPath(String requestURI, String queryString) {
+		// Parse the Spring Cloud Config URL pattern: /{application}/{profile}/{label}
+		String[] pathParts = requestURI.split("/");
+		if (pathParts.length < 4) {
+			throw new IllegalArgumentException("Invalid request URI format: " + requestURI);
+		}
+
+		String application = URLDecoder.decode(pathParts[1], StandardCharsets.UTF_8);
+		String profile = URLDecoder.decode(pathParts[2], StandardCharsets.UTF_8);
+
+		log.info("Decoded application: {}", application);
+		log.info("Decoded profile: {}", profile);
+
+		// Build path and extract expression
+		String path = buildPathFromApplicationProfile(application, profile);
+		String expression = extractExpressionFromQueryOrProfile(queryString, profile);
+
+		return new String[]{path, expression};
+	}
+
+	private String[] extractPathAndExpressionFromParameters(String application, String profile) {
+		log.info("Building path and expression from parameters - application: {}, profile: {}", application, profile);
+
+		String path;
+		String expression = "";
+
+		if (application.contains("/") && application.endsWith(".js")) {
+			// Direct path specified (e.g., "java-opts/docker-conf/mobile.js")
+			path = "/" + application;
+
+			// Check if profile contains expression
+			if (profile.contains("expression=")) {
+				expression = extractExpressionFromProfile(profile);
+			}
+		} else if (profile.contains("?")) {
+			// Query parameters in profile (e.g., "js?expression=${all}")
+			String[] parts = profile.split("\\?", 2);
+			path = "/" + application + "/" + parts[0];
+
+			// Extract expression from query part
+			if (parts[1].contains("expression=")) {
+				String[] expressionParts = parts[1].split("expression=", 2);
+				if (expressionParts.length > 1) {
+					expression = URLDecoder.decode(expressionParts[1].split("&")[0], StandardCharsets.UTF_8);
+				}
+			}
+		} else {
+			// Standard application/profile format
+			path = "/" + application + "/" + profile + ".js";
+		}
+
+		return new String[]{path, expression};
+	}
+
+	private String buildPathFromApplicationProfile(String application, String profile) {
+		if (application.endsWith(".js")) {
+			// Direct JavaScript file path
+			return "/" + application;
+		} else if (profile.contains("?")) {
+			// Profile contains query parameters (e.g., "js?expression=${all}")
+			String[] profileParts = profile.split("\\?", 2);
+			return "/" + application + "/" + profileParts[0];
+		} else {
+			// Standard pattern
+			return "/" + application + "/" + profile + ".js";
+		}
+	}
+
+	private String extractExpressionFromQueryOrProfile(String queryString, String profile) {
+		// Try query string first
+		if (queryString != null && queryString.contains("expression=")) {
+			String[] parts = queryString.split("expression=", 2);
+			if (parts.length > 1) {
+				return URLDecoder.decode(parts[1].split("&")[0], StandardCharsets.UTF_8);
+			}
+		}
+
+		// Try profile
+		return extractExpressionFromProfile(profile);
+	}
+
+	// ... existing code ...
+
+
 	@Override
 	public Map<String, Object> loadProperties(String application, String profile, String label) {
 		// Fallback method without HTTP request context
@@ -77,53 +223,134 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 	}
 
 	private String buildNexlUrlFromHttpRequest(HttpServletRequest request) {
-		// Extract the path from the request URL
 		String requestURI = request.getRequestURI();
 		String queryString = request.getQueryString();
 
 		log.info("Processing request URI: {}", requestURI);
 		log.info("Query string: {}", queryString);
 
-		// Parse the Spring Cloud Config URL pattern: /{application}/{profile}/{label}
-		String[] pathParts = requestURI.split("/");
-		if (pathParts.length >= 4) {
-			String application = URLDecoder.decode(pathParts[1], StandardCharsets.UTF_8);
-			String profile = URLDecoder.decode(pathParts[2], StandardCharsets.UTF_8);
-
-			log.info("Decoded application: {}", application);
-			log.info("Decoded profile: {}", profile);
-
-			// Build Nexl URL
-			UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl);
-
-			// Handle different URL patterns
-			if (application.endsWith(".js")) {
-				// Direct JavaScript file path
-				builder.path("/" + application);
-			} else if (profile.contains("?")) {
-				// Profile contains query parameters (e.g., "js?expression=${all}")
-				String[] profileParts = profile.split("\\?", 2);
-				builder.path("/" + application + "/" + profileParts[0]);
-
-				// Add query parameters from profile
-				if (profileParts.length > 1) {
-					addQueryParametersFromString(builder, profileParts[1]);
-				}
-			} else {
-				// Standard pattern
-				builder.path("/" + application + "/" + profile + ".js");
-			}
-
-			// Add query parameters from original request
-			if (queryString != null) {
-				addQueryParametersFromString(builder, queryString);
-			}
-
-			return builder.build().toUriString();
+		// Check if there's a 'url' parameter - this is the primary case
+		String urlParam = request.getParameter("url");
+		if (urlParam != null) {
+			return buildNexlUrlFromUrlParameterWithReEncoding(urlParam);
 		}
 
-		throw new IllegalArgumentException("Invalid request URI format: " + requestURI);
+		// Fallback to path-based URL building
+		return buildNexlUrlFromRequestPath(requestURI, queryString);
 	}
+
+	private String buildNexlUrlFromUrlParameter(String urlParam) {
+		log.info("Found URL parameter: {}", urlParam);
+
+		// Let's try without re-encoding first - the parameter is already decoded by the servlet
+		String finalUrl = baseUrl + urlParam;
+
+		log.info("Built final URL: {}", finalUrl);
+		return finalUrl;
+	}
+
+	// Keep the re-encoding method but don't use it by default - we can test both approaches
+	private String buildNexlUrlFromUrlParameterWithReEncoding(String urlParam) {
+		log.info("Found URL parameter: {}", urlParam);
+
+		// Re-encode only the expression part if it exists
+		String processedUrl = reEncodeExpressionInUrl(urlParam);
+		String finalUrl = baseUrl + processedUrl;
+
+		log.info("Built final URL with re-encoding: {}", finalUrl);
+		return finalUrl;
+	}
+
+	private String reEncodeExpressionInUrl(String url) {
+		// Check if URL contains expression parameter
+		int expressionIndex = url.indexOf("expression=");
+		if (expressionIndex == -1) {
+			return url; // No expression parameter, return as-is
+		}
+
+		// Split the URL at the expression parameter
+		String beforeExpression = url.substring(0, expressionIndex + "expression=".length());
+		String afterExpression = url.substring(expressionIndex + "expression=".length());
+
+		// Find the end of the expression value (next & or end of string)
+		int nextParamIndex = afterExpression.indexOf('&');
+		String expressionValue;
+		String remainingParams;
+
+		if (nextParamIndex != -1) {
+			expressionValue = afterExpression.substring(0, nextParamIndex);
+			remainingParams = afterExpression.substring(nextParamIndex);
+		} else {
+			expressionValue = afterExpression;
+			remainingParams = "";
+		}
+
+		// Re-encode only the expression value
+		String encodedExpression = URLEncoder.encode(expressionValue, StandardCharsets.UTF_8);
+
+		return beforeExpression + encodedExpression + remainingParams;
+	}
+
+	private String buildNexlUrlFromRequestPath(String requestURI, String queryString) {
+		// Parse the Spring Cloud Config URL pattern: /{application}/{profile}/{label}
+		String[] pathParts = requestURI.split("/");
+		if (pathParts.length < 4) {
+			throw new IllegalArgumentException("Invalid request URI format: " + requestURI);
+		}
+
+		String application = URLDecoder.decode(pathParts[1], StandardCharsets.UTF_8);
+		String profile = URLDecoder.decode(pathParts[2], StandardCharsets.UTF_8);
+
+		log.info("Decoded application: {}", application);
+		log.info("Decoded profile: {}", profile);
+
+		UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(baseUrl);
+
+		// Build path based on different patterns
+		buildNexlPath(builder, application, profile);
+
+		// Add query parameters from original request
+		if (queryString != null) {
+			addQueryParametersFromString(builder, queryString);
+		}
+
+		return builder.build().toUriString();
+	}
+
+	private void buildNexlPath(UriComponentsBuilder builder, String application, String profile) {
+		if (application.endsWith(".js")) {
+			// Direct JavaScript file path
+			builder.path("/" + application);
+		} else if (profile.contains("?")) {
+			// Profile contains query parameters (e.g., "js?expression=${all}")
+			String[] profileParts = profile.split("\\?", 2);
+			builder.path("/" + application + "/" + profileParts[0]);
+
+			// Add query parameters from profile
+			if (profileParts.length > 1) {
+				addQueryParametersFromString(builder, profileParts[1]);
+			}
+		} else {
+			// Standard pattern
+			builder.path("/" + application + "/" + profile + ".js");
+		}
+	}
+
+// Remove the old extractUrlParameter method as it's no longer needed
+
+
+//	private String extractUrlParameter(HttpServletRequest request) {
+//		String urlParam = request.getParameter("url");
+//		if (urlParam != null) {
+//			String[] urlExpressionParts = urlParam.split("expression=");
+//			if (urlExpressionParts.length > 1) {
+//				urlParam = urlExpressionParts[1];
+//			}
+//			// URL decode the parameter
+//			return URLEncoder.encode(urlParam, StandardCharsets.UTF_8);
+//		}
+//		return null;
+//	}
 
 	private String buildNexlUrlFromParameters(String application, String profile) {
 		log.info("Building Nexl URL from parameters - application: {}, profile: {}", application, profile);

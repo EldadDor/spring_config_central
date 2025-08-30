@@ -28,7 +28,7 @@ config:
   providers:
     nexl:
       enabled: true
-      base-url: http://nexl:8181/deployment/javaserver
+      base-url: http://nexl:8181
     git:
       enabled: true
       fallback: true

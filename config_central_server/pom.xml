@@ -56,13 +56,19 @@
 
     <build>
         <plugins>
-            <!-- Kotlin Maven plugin with Kotlin 2.x -->
+
+	        <!-- Kotlin Maven plugin with Kotlin 2.x -->
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
                 <version>${kotlin.version}</version>
-                <configuration>
-                    <args>
+	            <configuration>
+		            <sourceDirs>
+			            <sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+			            <sourceDir>${project.basedir}/src/main/java</sourceDir>
+		            </sourceDirs>
+
+		            <args>
                         <arg>-Xjsr305=strict</arg>
                     </args>
                     <compilerPlugins>
