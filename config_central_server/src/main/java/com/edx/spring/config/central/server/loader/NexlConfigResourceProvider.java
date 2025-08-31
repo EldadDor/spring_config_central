@@ -20,7 +20,7 @@ import java.net.URLEncoder;
 public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourceProvider {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
-	private  final KNexlService nexlService = new KNexlService();
+	private final KNexlService nexlService = new KNexlService();
 
 	@Value("${config.providers.nexl.enabled:true}")
 	private boolean enabled;
@@ -29,11 +29,11 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 	@Value("${config.providers.nexl.base-url:http://nexl:8181}")
 	private String baseUrl;
 
-	@Override
+	/*@Override
 	public boolean supports(String label) {
 		// Support when label is "nexl" or when it's the primary provider
 		return enabled && ("nexl".equals(label) || "nexl-primary".equals(label));
-	}
+	}*/
 
 	@Override
 	public Map<String, Object> loadProperties(String application, String profile, String label, HttpServletRequest request) {
@@ -87,6 +87,26 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 		return new HashMap<>();
 	}
 
+	@Override
+	public boolean supports(String label) {
+		// Support when label is "nexl" or when it's the primary provider and not a git label
+		return enabled && ("nexl".equals(label) || "nexl-primary".equals(label) || (!isGitLabel(label) && isPrimaryProvider())
+		);
+	}
+
+	private boolean isGitLabel(String label) {
+		return "git".equals(label) ||
+				"main".equals(label) ||
+				"master".equals(label) ||
+				"develop".equals(label) ||
+				label.startsWith("feature/") ||
+				label.startsWith("release/") ||
+				label.matches("v\\d+\\.\\d+.*");
+	}
+
+	private boolean isPrimaryProvider() {
+		return true; // or check some configuration property
+	}
 
 	private String[] extractPathAndExpressionFromHttpRequest(HttpServletRequest request) {
 		String requestURI = request.getRequestURI();
@@ -213,9 +233,6 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 		return extractExpressionFromProfile(profile);
 	}
 
-	// ... existing code ...
-
-
 	@Override
 	public Map<String, Object> loadProperties(String application, String profile, String label) {
 		// Fallback method without HTTP request context
@@ -335,22 +352,6 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 			builder.path("/" + application + "/" + profile + ".js");
 		}
 	}
-
-// Remove the old extractUrlParameter method as it's no longer needed
-
-
-//	private String extractUrlParameter(HttpServletRequest request) {
-//		String urlParam = request.getParameter("url");
-//		if (urlParam != null) {
-//			String[] urlExpressionParts = urlParam.split("expression=");
-//			if (urlExpressionParts.length > 1) {
-//				urlParam = urlExpressionParts[1];
-//			}
-//			// URL decode the parameter
-//			return URLEncoder.encode(urlParam, StandardCharsets.UTF_8);
-//		}
-//		return null;
-//	}
 
 	private String buildNexlUrlFromParameters(String application, String profile) {
 		log.info("Building Nexl URL from parameters - application: {}, profile: {}", application, profile);

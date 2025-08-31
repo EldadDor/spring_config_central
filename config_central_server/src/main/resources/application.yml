@@ -12,28 +12,31 @@ spring:
     config:
       server:
         git:
-          uri: https://github.com/your-org/your-config-repo.git
-          # Add credentials if needed
-          # username: your-username
-          # password: your-password
-        # You can also configure multiple git repositories
-        composite:
-          - type: git
-            uri: https://github.com/your-org/your-config-repo.git
-          - type: git
-            uri: https://github.com/your-org/another-config-repo.git
+          enabled: false
+        # Disable default repository creation
+        default-application-name: application
+        default-profile: default
+        bootstrap: false
 
-# Custom configuration for your providers
 config:
   providers:
     nexl:
       enabled: true
       base-url: http://nexl:8181
-    git:
-      enabled: true
-      fallback: true
 
-#logging:
-#  level:
-#    org.springframework: DEBUG
-#    com.edx.spring.config: DEBUG
+# Disable health checks that might be causing conflicts
+management:
+  health:
+    config:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+# Enable debug logging to see what's happening
+logging:
+  level:
+    org.springframework.cloud.config.server: DEBUG
+    org.springframework.boot.autoconfigure: DEBUG
+    com.edx.spring.config: DEBUG

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.config.environment.Environment;
 import org.springframework.cloud.config.environment.PropertySource;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
+import org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentRepository;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -18,15 +19,33 @@ import java.util.Map;
 public class CustomEntryPointEnvironmentRepository implements EnvironmentRepository {
 
 	private final List<ConfigResourceProvider> providers;
+	private final MultipleJGitEnvironmentRepository gitEnvironmentRepository;
 
+	// Original constructor (backward compatibility)
 	public CustomEntryPointEnvironmentRepository(List<ConfigResourceProvider> providers) {
+		this(providers, null);
+	}
+
+	// New constructor with Git support
+	public CustomEntryPointEnvironmentRepository(
+			List<ConfigResourceProvider> providers,
+			MultipleJGitEnvironmentRepository gitEnvironmentRepository) {
+
 		this.providers = providers.stream()
 				.sorted(AnnotationAwareOrderComparator.INSTANCE)
 				.toList();
+		this.gitEnvironmentRepository = gitEnvironmentRepository;
+
 		log.info("Initialized with {} providers: {}", providers.size(),
 				providers.stream()
 						.map(p -> p.getClass().getSimpleName() + "(order=" + p.getOrder() + ")")
 						.toList());
+
+		if (gitEnvironmentRepository != null) {
+			log.info("Git repository support enabled");
+		} else {
+			log.info("Git repository support disabled - only provider-based configuration available");
+		}
 	}
 
 	@Override
@@ -34,6 +53,40 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 		log.info("Finding configuration for application: {}, profile: {}, label: {}",
 				application, profile, label);
 
+		// Handle null label - use default or fallback
+		String effectiveLabel = label != null ? label : "default";
+
+		// Route to Git repository if label indicates Git AND Git is enabled
+		if (isGitLabel(effectiveLabel)) {
+			if (gitEnvironmentRepository != null) {
+				log.info("Routing to Git repository for label: {}", effectiveLabel);
+				return gitEnvironmentRepository.findOne(application, profile, effectiveLabel);
+			} else {
+				log.warn("Git label '{}' requested but Git repository is disabled. Falling back to providers.", effectiveLabel);
+				// Fall through to provider-based logic
+			}
+		}
+
+		// Continue with existing provider-based logic for NEXL and others
+		return findOneUsingProviders(application, profile, effectiveLabel);
+	}
+
+	private boolean isGitLabel(String label) {
+		// Handle null label safely
+		if (label == null) {
+			return false;
+		}
+
+		return "git".equals(label) ||
+				"main".equals(label) ||
+				"master".equals(label) ||
+				"develop".equals(label) ||
+				label.startsWith("feature/") ||
+				label.startsWith("release/") ||
+				label.matches("v\\d+\\.\\d+.*"); // version tags like v1.0, v2.1.3
+	}
+
+	private Environment findOneUsingProviders(String application, String profile, String label) {
 		// Get the current HTTP request
 		HttpServletRequest request = getCurrentHttpRequest();
 		if (request != null) {
