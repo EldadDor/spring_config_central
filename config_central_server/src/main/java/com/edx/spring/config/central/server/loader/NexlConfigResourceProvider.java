@@ -29,6 +29,9 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 	@Value("${config.providers.nexl.base-url:http://nexl:8181}")
 	private String baseUrl;
 
+	@Value("${config.providers.nexl.fallback:false}")
+	private boolean fallback;
+
 	/*@Override
 	public boolean supports(String label) {
 		// Support when label is "nexl" or when it's the primary provider
@@ -87,11 +90,16 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 		return new HashMap<>();
 	}
 
+
 	@Override
 	public boolean supports(String label) {
-		// Support when label is "nexl" or when it's the primary provider and not a git label
-		return enabled && ("nexl".equals(label) || "nexl-primary".equals(label) || (!isGitLabel(label) && isPrimaryProvider())
-		);
+		// Support explicit nexl labels
+		if ("nexl".equals(label) || "nexl-primary".equals(label)) {
+			return enabled;
+		}
+
+		// Only act as fallback if explicitly enabled
+		return enabled && fallback && !isGitLabel(label);
 	}
 
 	private boolean isGitLabel(String label) {
