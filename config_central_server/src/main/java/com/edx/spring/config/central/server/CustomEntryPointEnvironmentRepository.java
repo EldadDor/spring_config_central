@@ -109,12 +109,18 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 					if (provider instanceof HttpRequestAwareConfigResourceProvider) {
 						properties = ((HttpRequestAwareConfigResourceProvider) provider)
 								.loadProperties(application, profile, label, request);
+						environment.setName("");
+						environment.setLabel("");
+						environment.setVersion("");
+						environment.add(new PropertySource(null, properties));
+						return environment;
 					} else {
 						properties = provider.loadProperties(application, profile, label);
 					}
 
 					if (properties != null && !properties.isEmpty()) {
 						String sourceName = provider.getClass().getSimpleName() + "-" + label;
+
 						environment.add(new PropertySource(sourceName, properties));
 						log.info("Added {} properties from {}", properties.size(), sourceName);
 					}

@@ -420,16 +420,17 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 				properties = parseJavaScriptResponse(response);
 				log.info("Parsed JavaScript response with {} properties", properties.size());
 			}
-
+//			return properties;
 			// Add metadata about the source
-			properties.put("nexl.source.application", application);
+			return properties;
+			/*properties.put("nexl.source.application", application);
 			properties.put("nexl.source.profile", profile);
 			properties.put("nexl.source.timestamp", System.currentTimeMillis());
 
 			if (request != null) {
 				properties.put("nexl.source.requestUri", request.getRequestURI());
 				properties.put("nexl.source.queryString", request.getQueryString());
-			}
+			}*/
 
 		} catch (Exception e) {
 			log.warn("Failed to parse Nexl response as JSON, treating as plain text: {}", e.getMessage());
