@@ -133,7 +133,7 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 		return extractPathAndExpressionFromRequestPath(requestURI, queryString);
 	}
 
-	private String[] splitUrlParameterIntoPathAndExpression(String urlParam) {
+/*	private String[] splitUrlParameterIntoPathAndExpression(String urlParam) {
 		log.info("Found URL parameter: {}", urlParam);
 
 		// Split on "expression="
@@ -158,6 +158,34 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 
 		log.info("Split URL - path: {}, expression: {}", path, decodedExpression);
 		return new String[]{path, decodedExpression};
+	}*/
+
+	private String[] splitUrlParameterIntoPathAndExpression(String urlParam) {
+		log.info("Found URL parameter: {}", urlParam);
+
+		// Check if URL contains expression parameter
+		int expressionIndex = urlParam.indexOf("expression=");
+		if (expressionIndex != -1) {
+			// Handle the case with expression parameter (existing logic)
+			String path = urlParam.substring(0, expressionIndex - 1); // Remove the "?" before "expression="
+			String expressionPart = urlParam.substring(expressionIndex + "expression=".length());
+
+			// Find the end of the expression value (next & or end of string)
+			int nextParamIndex = expressionPart.indexOf('&');
+			String expression = nextParamIndex != -1 ?
+					expressionPart.substring(0, nextParamIndex) :
+					expressionPart;
+
+			// URL decode the expression since it comes from the URL parameter
+			String decodedExpression = URLDecoder.decode(expression, StandardCharsets.UTF_8);
+
+			log.info("Split URL with expression - path: {}, expression: {}", path, decodedExpression);
+			return new String[]{path, decodedExpression};
+		} else {
+			// Handle the case without expression parameter - just pass the entire URL as path
+			log.info("URL without expression parameter - using entire URL as path: {}", urlParam);
+			return new String[]{urlParam, ""};
+		}
 	}
 
 	private String[] extractPathAndExpressionFromRequestPath(String requestURI, String queryString) {

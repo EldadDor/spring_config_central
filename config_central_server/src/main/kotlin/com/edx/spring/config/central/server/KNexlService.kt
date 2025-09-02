@@ -41,8 +41,15 @@ class KNexlService(private val httpClient: HttpClient = createDefaultHttpClient(
 			val baseUrl = "http://nexl:8181"
 			// Clean the path - remove leading slash if present since we'll add it
 			val cleanPath = if (path.startsWith("/")) path else "/$path"
-			val encodedExpression = URLEncoder.encode(expression, StandardCharsets.UTF_8)
-			val fullUrl = "$baseUrl$cleanPath?expression=$encodedExpression"
+
+			// Build URL with or without expression parameter
+			val fullUrl = if (expression.isNotEmpty()) {
+				val encodedExpression = URLEncoder.encode(expression, StandardCharsets.UTF_8)
+				"$baseUrl$cleanPath?expression=$encodedExpression"
+			} else {
+				// If no expression, just use the path as-is (it might already contain query parameters)
+				"$baseUrl$cleanPath"
+			}
 
 			println("Target URL: $fullUrl")
 
@@ -71,6 +78,7 @@ class KNexlService(private val httpClient: HttpClient = createDefaultHttpClient(
 			Result.failure(e)
 		}
 	}
+
 
 	data class NexlResult(
 		val isSuccess: Boolean,
