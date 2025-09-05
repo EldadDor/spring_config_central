@@ -1,0 +1,7 @@
+@Library('shared-library@MicroServiceCD_upgrades') _
+
+def config=["msImageName":"config-central-server",
+			"folderName":"config_central_server",
+			"activeProfile":"operation"]
+
+MicroServiceCD(config)

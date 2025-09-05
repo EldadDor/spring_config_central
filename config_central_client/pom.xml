@@ -24,36 +24,23 @@
 
     </dependencies>
 
-    <!--<build>
-        <plugins>
-            &lt;!&ndash; This plugin is required to package the application as an executable JAR &ndash;&gt;
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
+	<build>
+	<!--	<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<compilerId>javac</compilerId>
+					<source>21</source>
+					<target>21</target>
+					<fork>true</fork>
+					<executable>/usr/lib/jvm/java-21-openjdk-21.0.7.0.6-1.el9.x86_64/bin/javac</executable>
+					<compilerArgs>
+						<arg>-verbose</arg>
                 </configuration>
             </plugin>
-            &lt;!&ndash; This plugin configuration is needed to make Lombok work correctly with Maven &ndash;&gt;
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> &lt;!&ndash; Version is managed by spring-boot-starter-parent &ndash;&gt;
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
--->
+		</plugins>-->
+		<finalName>${project.artifactId}</finalName>
+	</build>
+
 </project>

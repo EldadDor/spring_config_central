@@ -1,108 +1,157 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
 
-    <!-- Use a stable, recent version of Spring Boot. This manages versions for many common dependencies. -->
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.3</version>
-        <relativePath/> <!-- lookup parent from repository -->
-    </parent>
+	<!-- Use a stable, recent version of Spring Boot. This manages versions for many common dependencies. -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.5.5</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
 
-    <groupId>com.edx.spring.config</groupId>
-    <artifactId>spring-config-central-parent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
-    <name>spring-config-central</name>
+	<groupId>com.edx.spring.config</groupId>
+	<artifactId>spring-config-central-parent</artifactId>
+	<version>1.0.0-SNAPSHOT</version>
+	<name>spring-config-central</name>
 	<packaging>pom</packaging>
-    <description>Spring Cloud Config central parent</description>
-
-    <properties>
-        <java.version>21</java.version>
-        <!-- Use the corresponding compatible Spring Cloud version for Spring Boot 3.3.x -->
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
-    </properties>
+	<description>Spring Cloud Config central parent</description>
 
 
-   <modules>
+	<properties>
+		<maven.compiler.release/>
+		<maven.compiler.source>21</maven.compiler.source>
+		<maven.compiler.target>21</maven.compiler.target>
+		<kotlin.version>2.0.20</kotlin.version>
+		<kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
+		<kotlin.compiler.apiVersion>2.0</kotlin.compiler.apiVersion>
+		<kotlin.compiler.languageVersion>2.0</kotlin.compiler.languageVersion>
+		<java.version>21</java.version>
+		<!-- Use the corresponding compatible Spring Cloud version for Spring Boot 3.3.x -->
+		<spring-cloud.version>2025.0.0</spring-cloud.version>
+	</properties>
+
+
+	<modules>
 		<module>config_central_server</module>
 		<module>config_central_client</module>
-   </modules>
+	</modules>
 
 
-    <dependencyManagement>
-        <dependencies>
-            <!-- This Bill of Materials (BOM) manages all Spring Cloud dependency versions -->
-            <dependency>
-                <groupId>org.springframework.cloud</groupId>
-                <artifactId>spring-cloud-dependencies</artifactId>
-                <version>${spring-cloud.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
+	<dependencyManagement>
+		<dependencies>
+			<!-- This Bill of Materials (BOM) manages all Spring Cloud dependency versions -->
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
-    <dependencies>
+	<dependencies>
 
-        <!-- Required for any web application, including the REST endpoints for the config server -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
+		<!-- Required for any web application, including the REST endpoints for the config server -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
 
-        <!-- Best practice for health checks, metrics, and monitoring. Also provides ObservationRegistry. -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-actuator</artifactId>
-        </dependency>
+		<!-- Best practice for health checks, metrics, and monitoring. Also provides ObservationRegistry. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
 
-        <!-- For reducing boilerplate code with annotations like @Data, @Getter, etc. -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
+		<!-- For reducing boilerplate code with annotations like @Data, @Getter, etc. -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
 
-        <!-- Core testing framework for Spring Boot -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+		<!-- Core testing framework for Spring Boot -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
-    <build>
-        <plugins>
-            <!-- This plugin is required to package the application as an executable JAR -->
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <excludes>
-                        <exclude>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                        </exclude>
-                    </excludes>
-                </configuration>
-            </plugin>
-            <!-- This plugin configuration is needed to make Lombok work correctly with Maven -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version> <!-- Version is managed by spring-boot-starter-parent -->
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.13.0</version>
+					<configuration>
+						<source>21</source>
+						<target>21</target>
+						<fork>true</fork>
+<!--						<executable>/usr/lib/jvm/java-21-openjdk-21.0.7.0.6-1.el9.x86_64/bin/javac</executable>-->
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+<!--					<version>3.11.0</version>-->
+					<configuration>
+						<source>21</source>
+						<target>21</target>
+						<fork>true</fork>
+						<release></release>
+					</configuration>
+				</plugin>
+			</plugins>
+
+	</build>
+
+	<profiles>
+		<profile>
+			<id>linux</id>
+			<activation>
+				<os>
+					<family>unix</family> <!-- Activates on Linux/Unix -->
+				</os>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<executable>/usr/lib/jvm/java-21-openjdk-21.0.7.0.6-1.el9.x86_64/bin/javac</executable>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<id>windows</id>
+			<activation>
+				<os>
+					<family>windows</family> <!-- Activates on Windows -->
+				</os>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-compiler-plugin</artifactId>
+						<configuration>
+							<executable></executable>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 </project>

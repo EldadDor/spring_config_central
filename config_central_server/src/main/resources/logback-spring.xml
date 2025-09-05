@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<property name="LOG_FILE_PATH" value="./logs"/>
+	<contextName>logback</contextName>
+
+	<!-- Console appender for testing -->
+	<appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+		<layout class="ch.qos.logback.classic.PatternLayout">
+			<Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [TraceId=%X{traceId}] [SpanId=%X{spanId}] [%thread] %p %m%n</Pattern>
+		</layout>
+	</appender>
+
+	<appender name="RollingFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_FILE_PATH}/spring-boot-logger.log</file>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [TraceId=%X{traceId}] [SpanId=%X{spanId}] [%thread] %p %m%n</Pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<maxHistory>4</maxHistory>
+			<fileNamePattern>${LOG_FILE_PATH}/archived/spring-boot-logger-%d{yyyy-MM-dd}.log</fileNamePattern>
+		</rollingPolicy>
+	</appender>
+
+	<appender name="PerformanceLogger" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_FILE_PATH}/performance/performance.log</file>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [TraceId=%X{traceId}] [SpanId=%X{spanId}] [%thread] %p %m%n</Pattern>
+		</encoder>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<maxHistory>4</maxHistory>
+			<fileNamePattern>${LOG_FILE_PATH}/performance/archived/performance-%d{yyyy-MM-dd}.log</fileNamePattern>
+		</rollingPolicy>
+	</appender>
+
+	<!-- LOG everything at INFO level -->
+	<root level="info">
+		<appender-ref ref="RollingFile"/>
+		<appender-ref ref="Console"/>
+	</root>
+
+	<!-- Performance logger -->
+	<logger name="com.idi.plugin.aop.PerformanceLogger" level="info" additivity="false">
+		<appender-ref ref="PerformanceLogger"/>
+	</logger>
+
+	<!-- Config server specific loggers -->
+	<logger name="com.edx.spring.config.central.server" level="debug" additivity="false">
+		<appender-ref ref="RollingFile"/>
+		<appender-ref ref="Console"/>
+	</logger>
+
+	<!-- Spring Cloud Config Server loggers -->
+	<logger name="org.springframework.cloud.config.server" level="info" additivity="false">
+		<appender-ref ref="RollingFile"/>
+		<appender-ref ref="Console"/>
+	</logger>
+</configuration>

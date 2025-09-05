@@ -1,3 +1,4 @@
+
 package com.edx.spring.config.central.server.config;
 
 import com.edx.spring.config.central.server.service.ConfigResponseInterceptor;
@@ -11,6 +12,7 @@ import org.springframework.web.util.ContentCachingResponseWrapper;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @Configuration
@@ -18,9 +20,17 @@ public class WebInterceptorConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new ConfigResponseInterceptor())
-				.addPathPatterns("/**")
-				.excludePathPatterns("/actuator/**", "/error");
+		registry.addInterceptor(new ConfigResponseInterceptor()).addPathPatterns("/**")
+				.excludePathPatterns(
+						"/actuator/**",
+						"/error",
+						"/swagger-ui/**",
+						"/swagger-ui.html",
+						"/v3/api-docs/**",
+						"/swagger-resources/**",
+						"/webjars/**",
+						"/admin/**"  // Exclude our admin endpoints too
+				);
 	}
 
 	@Bean
@@ -34,14 +44,14 @@ public class WebInterceptorConfig implements WebMvcConfigurer {
 
 	public static class ContentCachingFilter implements Filter {
 		@Override
-		public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-				throws IOException, ServletException {
+		public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
 
 			if (request instanceof HttpServletRequest && response instanceof HttpServletResponse) {
 				HttpServletRequest httpRequest = (HttpServletRequest) request;
 				HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-				if (isNexlEndpoint(httpRequest)) {
+				// Skip caching for Swagger and admin endpoints
+				if (isNexlEndpoint(httpRequest) && !isSwaggerOrAdminEndpoint(httpRequest)) {
 					ContentCachingResponseWrapper wrapper = new ContentCachingResponseWrapper(httpResponse);
 					chain.doFilter(request, wrapper);
 					return;
@@ -54,6 +64,17 @@ public class WebInterceptorConfig implements WebMvcConfigurer {
 		private boolean isNexlEndpoint(HttpServletRequest request) {
 			String uri = request.getRequestURI();
 			return uri != null && uri.contains("/nexl");
+		}
+
+		private boolean isSwaggerOrAdminEndpoint(HttpServletRequest request) {
+			String uri = request.getRequestURI();
+			return uri != null && (
+					uri.startsWith("/swagger-ui") ||
+							uri.startsWith("/v3/api-docs") ||
+							uri.startsWith("/admin") ||
+							uri.startsWith("/webjars") ||
+							uri.startsWith("/swagger-resources")
+			);
 		}
 	}
 }

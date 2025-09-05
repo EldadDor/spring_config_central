@@ -17,5 +17,5 @@ public class SpringConfigCentralApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SpringConfigCentralApplication.class, args);
 	}
-
+	
 }

@@ -17,14 +17,17 @@ public class GitConfigResourceProvider implements ConfigResourceProvider {
     @Value("${config.providers.git.fallback:true}")
     private boolean fallback;
 
-    @Override
-    public boolean supports(String label) {
-        // Support when label is "git", "master", "main", or when used as fallback
-        return enabled && ("git".equals(label) || "master".equals(label) ||
-                "main".equals(label) || fallback);
-    }
+	@Override
+	public boolean supports(String label) {
+		if (!enabled) {
+			return false;
+		}
+		// Only support explicit git labels, don't act as fallback
+		return "git".equals(label) || "master".equals(label) || "main".equals(label);
+	}
 
-    @Override
+
+	@Override
     public Map<String, Object> loadProperties(String application, String profile, String label) {
         log.info("GitConfigResourceProvider loading properties for application: {}, profile: {}, label: {}",
                 application, profile, label);

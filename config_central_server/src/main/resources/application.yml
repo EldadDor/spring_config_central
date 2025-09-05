@@ -1,3 +1,4 @@
+
 server:
   port: 8888
 
@@ -7,7 +8,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
   profiles:
-    active: custom-repo
+    active: operation
   cloud:
     config:
       server:
@@ -23,6 +24,9 @@ config:
     nexl:
       enabled: true
       base-url: http://nexl:8181
+    git:
+      enabled: true
+      fallback: false  # Disable fallback to prevent interference
 
 # Disable health checks that might be causing conflicts
 management:
@@ -34,9 +38,10 @@ management:
       exposure:
         include: health,info
 
-# Enable debug logging to see what's happening
+# Logging configuration
 logging:
+  config: classpath:logback-spring.xml
   level:
-    org.springframework.cloud.config.server: DEBUG
-    org.springframework.boot.autoconfigure: DEBUG
-    com.edx.spring.config: DEBUG
+    root: INFO
+    com.edx.spring.config.central.server: DEBUG
+    org.springframework.cloud.config.server: INFO

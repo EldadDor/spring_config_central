@@ -19,7 +19,7 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 
 @Configuration
-@Profile("custom-repo")
+@Profile("operation")
 @EnableConfigServer
 @Import({}) // Explicitly empty to avoid auto-imports
 public class ConfigServerConfiguration {
