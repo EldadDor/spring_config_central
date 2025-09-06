@@ -5,7 +5,10 @@ import com.edx.spring.config.central.server.service.ConfigResponseInterceptor;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
+import org.springframework.web.servlet.config.annotation.ContentNegotiationConfigurer;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
@@ -20,12 +23,47 @@ public class WebInterceptorConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new ConfigResponseInterceptor()).addPathPatterns("/**")
+		registry.addInterceptor(new ConfigResponseInterceptor())
+				.addPathPatterns("/**")
 				.excludePathPatterns(
 						"/actuator/**",
 						"/error",
-						"/admin/**"  // Exclude our admin endpoints too
+						"/admin/**",
+						"/css/**",      // Add these
+						"/fonts/**",    // Add these
+						"/js/**",       // Add these
+						"/static/**"    // Add these
 				);
+	}
+
+	@Override
+	public void configureContentNegotiation(ContentNegotiationConfigurer configurer) {
+		configurer
+				.favorParameter(false)
+				.ignoreAcceptHeader(false)
+				.defaultContentType(MediaType.APPLICATION_JSON)
+				.mediaType("css", MediaType.valueOf("text/css"))
+				.mediaType("js", MediaType.valueOf("application/javascript"))
+				.mediaType("woff", MediaType.valueOf("font/woff"))
+				.mediaType("woff2", MediaType.valueOf("font/woff2"));
+	}
+
+	@Override
+	public void addResourceHandlers(ResourceHandlerRegistry registry) {
+		// Handle CSS files
+		registry.addResourceHandler("/css/**")
+				.addResourceLocations("classpath:/static/css/")
+				.setCachePeriod(3600);
+
+		// Handle font files
+		registry.addResourceHandler("/fonts/**")
+				.addResourceLocations("classpath:/static/fonts/")
+				.setCachePeriod(3600);
+
+		// Handle static resources with /static prefix (if needed)
+		registry.addResourceHandler("/static/**")
+				.addResourceLocations("classpath:/static/")
+				.setCachePeriod(3600);
 	}
 
 	@Bean

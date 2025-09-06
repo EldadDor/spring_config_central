@@ -3,40 +3,56 @@
 <body>
 <div th:fragment="providers-list">
 	<div th:each="provider : ${providers}"
-		 th:class="|provider-card ${provider.enabled ? 'enabled' : 'disabled'} ${provider.isPrimary ? 'primary' : ''}|">
-		<article>
-			<header>
-				<h3 th:text="${provider.name}"></h3>
-				<span th:if="${provider.isPrimary}" class="badge">PRIMARY</span>
-			</header>
+	     th:class="|provider-card ${provider.enabled ? 'enabled' : 'disabled'} ${provider.isPrimary ? 'primary' : ''}|">
 
-			<p>
-				<strong>Status:</strong>
-				<span th:text="${provider.enabled ? 'Enabled' : 'Disabled'}"></span>
-			</p>
-			<p><strong>Order:</strong> <span th:text="${provider.order}"></span></p>
-			<p>
-				<strong>Supported Labels:</strong>
-				<span th:text="${#strings.listJoin(provider.supportedLabels, ', ')}"></span>
-			</p>
+		<div class="provider-header">
+			<h3 th:text="${provider.name}">Provider Name</h3>
+		</div>
 
-			<footer>
-				<button th:hx-post="@{/admin/providers/{name}/toggle(name=${provider.name})}"
-						hx-target="#providers-container"
-						hx-swap="innerHTML"
-						th:class="${provider.enabled ? 'secondary' : 'primary'}">
-					<span th:text="${provider.enabled ? 'Disable' : 'Enable'}"></span>
-				</button>
+		<div class="provider-content">
+			<div class="provider-info">
+				<div class="info-item">
+					<span class="info-label">Status</span>
+					<span th:class="|status-badge ${provider.enabled ? 'status-enabled' : 'status-disabled'}|"
+					      th:text="${provider.enabled ? 'Enabled' : 'Disabled'}">
+                            Enabled
+                        </span>
+				</div>
 
-				<button th:if="${!provider.isPrimary}"
-						th:hx-post="@{/admin/providers/{name}/primary(name=${provider.name})}"
-						hx-target="#providers-container"
-						hx-swap="innerHTML"
-						class="outline">
-					Set as Primary
-				</button>
-			</footer>
-		</article>
+				<div class="info-item">
+					<span class="info-label">Order</span>
+					<span class="info-value" th:text="${provider.order}">0</span>
+				</div>
+
+				<div class="info-item">
+					<span class="info-label">Supported Labels</span>
+					<span class="info-value" th:text="${#strings.listJoin(provider.supportedLabels, ', ')}">
+                            default, production
+                        </span>
+				</div>
+			</div>
+		</div>
+
+		<div class="provider-actions">
+			<button th:hx-post="@{/admin/providers/{name}/toggle(name=${provider.name})}"
+			        hx-target="#providers-container"
+			        hx-swap="innerHTML"
+			        th:class="|btn ${provider.enabled ? 'btn-danger' : 'btn-success'}|">
+				<span th:text="${provider.enabled ? '⏸️ Disable' : '▶️ Enable'}">Toggle</span>
+			</button>
+
+			<button th:if="${!provider.isPrimary}"
+			        th:hx-post="@{/admin/providers/{name}/primary(name=${provider.name})}"
+			        hx-target="#providers-container"
+			        hx-swap="innerHTML"
+			        class="btn btn-primary">
+				⭐ Set as Primary
+			</button>
+
+			<span th:if="${provider.isPrimary}" class="btn btn-secondary" style="cursor: default;">
+                    👑 Current Primary
+                </span>
+		</div>
 	</div>
 </div>
 </body>

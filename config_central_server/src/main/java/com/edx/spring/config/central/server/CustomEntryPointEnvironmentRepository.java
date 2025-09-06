@@ -57,11 +57,19 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 			String uri = request.getRequestURI();
 
 			// Skip processing for admin endpoints
-			if (uri.startsWith("/admin") ||
+			/*if (uri.startsWith("/admin") ||
 					uri.startsWith("/actuator") ||
-					uri.startsWith("/error")) {
-				return null; // Let Spring MVC handle these requests
-			}
+					uri.startsWith("/error") ||
+					uri.startsWith("/css") ||           // Add this
+					uri.startsWith("/fonts") ||         // Add this
+					uri.startsWith("/js") ||            // Add this
+					uri.startsWith("/static") ||        // Add this
+					uri.contains(".css") ||             // Add this
+					uri.contains(".woff") ||            // Add this
+					uri.contains(".woff2") ||           // Add this
+					uri.contains(".js")) {              // Add this
+				return new Environment(application, profile, label);
+			}*/
 		}
 
 		log.info("Finding configuration for application: {}, profile: {}, label: {}",
