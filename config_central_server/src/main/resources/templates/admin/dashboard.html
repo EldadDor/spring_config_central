@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Config Server Admin</title>
+	<script src="https://unpkg.com/htmx.org@1.9.10"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+	<style>
+        .provider-card { margin: 1rem 0; }
+        .enabled { border-left: 4px solid #28a745; }
+        .disabled { border-left: 4px solid #dc3545; }
+        .primary { background-color: #e3f2fd; }
+        .notification { position: fixed; top: 20px; right: 20px; z-index: 1000; }
+	</style>
+</head>
+<body>
+<main class="container">
+	<h1>Spring Cloud Config Server Admin</h1>
+
+	<!-- Notification area -->
+	<div id="notification-area"></div>
+
+	<!-- Primary Provider Info -->
+	<section>
+		<h2>Current Primary Provider: <span th:text="${primaryProvider}"></span></h2>
+	</section>
+
+	<!-- Providers Section -->
+	<section>
+		<header>
+			<h2>Configuration Providers</h2>
+			<button hx-get="/admin/providers"
+					hx-target="#providers-container"
+					hx-swap="innerHTML">
+				Refresh
+			</button>
+		</header>
+
+		<div id="providers-container"
+			 hx-get="/admin/providers"
+			 hx-trigger="load">
+			<!-- Providers will be loaded here -->
+		</div>
+	</section>
+
+	<!-- Git Repositories Section -->
+	<section>
+		<header>
+			<h2>Git Repositories</h2>
+			<button hx-get="/admin/git-repos/refresh"
+					hx-target="#git-repos-container"
+					hx-swap="innerHTML">
+				Refresh
+			</button>
+		</header>
+
+		<div id="git-repos-container"
+			 hx-get="/admin/git-repos/refresh"
+			 hx-trigger="load">
+			<!-- Git repos will be loaded here -->
+		</div>
+	</section>
+</main>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="providers-list">
+	<div th:each="provider : ${providers}"
+		 th:class="|provider-card ${provider.enabled ? 'enabled' : 'disabled'} ${provider.isPrimary ? 'primary' : ''}|">
+		<article>
+			<header>
+				<h3 th:text="${provider.name}"></h3>
+				<span th:if="${provider.isPrimary}" class="badge">PRIMARY</span>
+			</header>
+
+			<p>
+				<strong>Status:</strong>
+				<span th:text="${provider.enabled ? 'Enabled' : 'Disabled'}"></span>
+			</p>
+			<p><strong>Order:</strong> <span th:text="${provider.order}"></span></p>
+			<p>
+				<strong>Supported Labels:</strong>
+				<span th:text="${#strings.listJoin(provider.supportedLabels, ', ')}"></span>
+			</p>
+
+			<footer>
+				<button th:hx-post="@{/admin/providers/{name}/toggle(name=${provider.name})}"
+						hx-target="#providers-container"
+						hx-swap="innerHTML"
+						th:class="${provider.enabled ? 'secondary' : 'primary'}">
+					<span th:text="${provider.enabled ? 'Disable' : 'Enable'}"></span>
+				</button>
+
+				<button th:if="${!provider.isPrimary}"
+						th:hx-post="@{/admin/providers/{name}/primary(name=${provider.name})}"
+						hx-target="#providers-container"
+						hx-swap="innerHTML"
+						class="outline">
+					Set as Primary
+				</button>
+			</footer>
+		</article>
+	</div>
+</div>
+</body>
+</html>

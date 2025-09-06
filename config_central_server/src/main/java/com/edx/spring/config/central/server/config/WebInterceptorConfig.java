@@ -24,11 +24,6 @@ public class WebInterceptorConfig implements WebMvcConfigurer {
 				.excludePathPatterns(
 						"/actuator/**",
 						"/error",
-						"/swagger-ui/**",
-						"/swagger-ui.html",
-						"/v3/api-docs/**",
-						"/swagger-resources/**",
-						"/webjars/**",
 						"/admin/**"  // Exclude our admin endpoints too
 				);
 	}

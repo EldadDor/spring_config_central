@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="success-message" class="notification">
+	<article th:if="${message}"
+			 style="background-color: #d4edda; border-color: #c3e6cb;">
+		<p th:text="${message}"></p>
+	</article>
+</div>
+</body>
+</html>

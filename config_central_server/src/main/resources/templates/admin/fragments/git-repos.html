@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="git-repos-list">
+	<div th:each="repo : ${gitRepos}" class="git-repo-card">
+		<article>
+			<header>
+				<h4 th:text="${repo.provider}"></h4>
+			</header>
+
+			<p><strong>URL:</strong> <span th:text="${repo.url}"></span></p>
+			<p><strong>Branch:</strong> <span th:text="${repo.branch}"></span></p>
+			<p><strong>Last Update:</strong> <span th:text="${repo.lastUpdate}"></span></p>
+		</article>
+	</div>
+
+	<!-- Show message if no repos -->
+	<div th:if="${#lists.isEmpty(gitRepos)}" class="no-repos">
+		<p>No Git repositories configured</p>
+	</div>
+</div>
+</body>
+</html>

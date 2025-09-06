@@ -50,10 +50,27 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
+		// Check if this is an admin request - if so, skip processing
+		ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+		if (attributes != null) {
+			HttpServletRequest request = attributes.getRequest();
+			String uri = request.getRequestURI();
+
+			// Skip processing for admin endpoints
+			if (uri.startsWith("/admin") ||
+					uri.startsWith("/actuator") ||
+					uri.startsWith("/error")) {
+				return null; // Let Spring MVC handle these requests
+			}
+		}
+
 		log.info("Finding configuration for application: {}, profile: {}, label: {}",
 				application, profile, label);
 
-		// Handle null label - use default or fallback
+		// Your existing logic continues here...
+		// ... rest of your existing code
+
+	// Handle null label - use default or fallback
 		String effectiveLabel = label != null ? label : "default";
 
 		// Route to Git repository if label indicates Git AND Git is enabled

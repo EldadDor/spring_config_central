@@ -1,9 +1,11 @@
 package com.edx.spring.config.central.server.loader;
 
 import com.edx.spring.config.central.server.KNexlService;
+import com.edx.spring.config.central.server.admin.ConfigProviderManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -19,8 +21,11 @@ import java.net.URLEncoder;
 @Slf4j
 public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourceProvider {
 
+	@Autowired
+	private ConfigProviderManager providerManager;
+	@Autowired
+	private KNexlService nexlService;
 	private final ObjectMapper objectMapper = new ObjectMapper();
-	private final KNexlService nexlService = new KNexlService();
 
 	@Value("${config.providers.nexl.enabled:true}")
 	private boolean enabled;
@@ -93,13 +98,21 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 
 	@Override
 	public boolean supports(String label) {
-		// Support explicit nexl labels
-		if ("nexl".equals(label) || "nexl-primary".equals(label)) {
-			return enabled;
+		// Check if provider is enabled at runtime
+		if (!providerManager.isProviderEnabled(this.getClass().getSimpleName())) {
+			log.debug("Provider {} is disabled, skipping", this.getClass().getSimpleName());
+			return false;
 		}
 
+		// Your existing logic
+		if ("nexl".equals(label) || "nexl-primary".equals(label)) {
+			return true;
+		}
+
+		return providerManager.getPrimaryProvider().equals("nexl") &&
+				fallback && !isGitLabel(label);
 		// Only act as fallback if explicitly enabled
-		return enabled && fallback && !isGitLabel(label);
+//		return enabled && fallback && !isGitLabel(label);
 	}
 
 	private boolean isGitLabel(String label) {
