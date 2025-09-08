@@ -15,13 +15,34 @@ class KNexlService(private val httpClient: HttpClient = createDefaultHttpClient(
 
 	companion object {
 		private fun createDefaultHttpClient(): HttpClient {
+			// Create a custom ProxySelector that bypasses proxy for nexl
+			val proxySelector = object : ProxySelector() {
+				private val defaultSelector = ProxySelector.getDefault()
+
+				override fun select(uri: URI?): List<java.net.Proxy> {
+					return if (uri != null && (uri.host == "nexl" || uri.host == "localhost")) {
+						// Return NO_PROXY for nexl and localhost
+						listOf(java.net.Proxy.NO_PROXY)
+					} else {
+						// Use default proxy for everything else
+						defaultSelector.select(uri)
+					}
+				}
+
+				override fun connectFailed(uri: URI?, sa: java.net.SocketAddress?, ioe: java.io.IOException?) {
+					defaultSelector.connectFailed(uri, sa, ioe)
+				}
+			}
+
 			return HttpClient.newBuilder()
 				.connectTimeout(Duration.ofSeconds(10))
 				.followRedirects(HttpClient.Redirect.NORMAL)
 				.version(HttpClient.Version.HTTP_1_1)
+				.proxy(proxySelector)
 				.build()
 		}
 	}
+
 
 	fun callNexlServerForJava(path: String, expression: String): NexlResult {
 		return try {
