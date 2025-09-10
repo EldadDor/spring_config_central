@@ -13,7 +13,15 @@ spring:
     config:
       server:
         git:
-          enabled: false
+          enabled: true
+          uri: https://dev.azure.com/MY_ORG/DevopsConfig/_git/Config-Central-REPO
+          skipSslValidation: true
+          default-label: develop          # branch to read from
+          clone-on-start: true            # clone at startup
+          force-pull: true                # always refresh remote
+          timeout: 10
+          username: MY_USER
+          password: MY_PAT
         # Disable default repository creation
         default-application-name: application
         default-profile: default
