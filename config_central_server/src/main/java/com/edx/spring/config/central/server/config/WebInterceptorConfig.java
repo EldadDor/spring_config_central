@@ -2,7 +2,9 @@
 package com.edx.spring.config.central.server.config;
 
 import com.edx.spring.config.central.server.service.ConfigResponseInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -21,9 +23,11 @@ import java.io.IOException;
 @Configuration
 public class WebInterceptorConfig implements WebMvcConfigurer {
 
+	@Autowired
+	private ApplicationContext applicationContext; ;
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		registry.addInterceptor(new ConfigResponseInterceptor())
+		registry.addInterceptor(new ConfigResponseInterceptor(applicationContext))
 				.addPathPatterns("/**")
 				.excludePathPatterns(
 						"/actuator/**",

@@ -2,8 +2,11 @@ package com.edx.spring.config.central.server.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
 import org.springframework.cloud.config.environment.Environment;
 import org.springframework.cloud.config.environment.PropertySource;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.ContentCachingResponseWrapper;
 
@@ -16,6 +19,15 @@ import java.util.Map;
 public class ConfigResponseInterceptor implements HandlerInterceptor {
 
 	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final ApplicationContext context;
+	public ConfigResponseInterceptor(ApplicationContext context) {
+		this.context = context;
+	}
+	@Override
+	public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+		log.info("Config request intercepted: {}", request.getRequestURI());
+		return HandlerInterceptor.super.preHandle(request, response, handler);
+	}
 
 	@Override
 	public void afterCompletion(HttpServletRequest request, HttpServletResponse response,

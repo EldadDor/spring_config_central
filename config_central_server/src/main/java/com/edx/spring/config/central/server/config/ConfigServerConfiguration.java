@@ -4,7 +4,9 @@ import com.edx.spring.config.central.server.CustomEntryPointEnvironmentRepositor
 import com.edx.spring.config.central.server.env.NexlEnvironmentRepository;
 import com.edx.spring.config.central.server.loader.ConfigResourceProvider;
 import io.micrometer.observation.ObservationRegistry;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.config.server.EnableConfigServer;
@@ -24,8 +26,15 @@ import java.util.List;
  * via a composite repository. This reuses Spring's native Git support while integrating
  * custom Nexl logic.
  */
+
+
+/**
+ * Configuration class for Spring Cloud Config Server, enabling both Git and Nexl backends
+ * via a custom repository with smart routing logic.
+ */
 @Configuration
 @Profile("operation")
+@Slf4j
 @EnableConfigServer
 public class ConfigServerConfiguration {
 
@@ -37,35 +46,29 @@ public class ConfigServerConfiguration {
 		return new MultipleJGitEnvironmentProperties();
 	}
 
-	// Spring's native Git EnvironmentRepository
-	@Bean
+	// Create the raw Git repository (not exposed as EnvironmentRepository)
+	@Bean("multipleJGitEnvironmentRepository")
 	@ConditionalOnProperty(name = "spring.cloud.config.server.git.enabled", havingValue = "true")
-	public EnvironmentRepository gitEnvironmentRepository(
+	public MultipleJGitEnvironmentRepository multipleJGitEnvironmentRepository(
 			ConfigurableEnvironment environment,
 			MultipleJGitEnvironmentProperties gitProperties,
 			ObservationRegistry observationRegistry) {
-		return ObservationEnvironmentRepositoryWrapper.wrap(
-				observationRegistry,
-				new MultipleJGitEnvironmentRepository(environment, gitProperties, observationRegistry)
-		);
+		return new MultipleJGitEnvironmentRepository(environment, gitProperties, observationRegistry);
 	}
 
-	// The primary composite repository that combines Git and Nexl
+	// THE ONLY EnvironmentRepository bean - your custom entry point
 	@Bean
 	@Primary
-	public EnvironmentRepository environmentRepository(ObservationRegistry observationRegistry, @Autowired(required = false) EnvironmentRepository gitEnvironmentRepository,
-	                                                   NexlEnvironmentRepository nexlEnvironmentRepository) {
+	public EnvironmentRepository environmentRepository(
+			ObservationRegistry observationRegistry,
+			CustomEntryPointEnvironmentRepository customEntryPointRepository) {
 
-		// List of repositories to compose (Git is optional based on condition)
-		List<EnvironmentRepository> repositories = gitEnvironmentRepository != null
-				? Arrays.asList(gitEnvironmentRepository, nexlEnvironmentRepository)
-				: List.of(nexlEnvironmentRepository);
+		log.info("=== Creating THE ONLY EnvironmentRepository bean ===");
+		log.info("Using CustomEntryPointRepository: {}", customEntryPointRepository.getClass().getName());
 
-		// Create composite
-		CompositeEnvironmentRepository composite = new CompositeEnvironmentRepository(repositories, observationRegistry, true);
-
-		// Wrap for observability
-		return ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, composite);
+		EnvironmentRepository wrapped = ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, customEntryPointRepository);
+		log.info("Created wrapped repository: {}", wrapped.getClass().getName());
+		return wrapped;
 	}
 
 	@Bean
