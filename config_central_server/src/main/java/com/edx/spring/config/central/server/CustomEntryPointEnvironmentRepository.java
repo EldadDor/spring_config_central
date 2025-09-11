@@ -12,6 +12,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
 
@@ -50,66 +51,50 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
-		// Check if this is an admin request - if so, skip processing
-		ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-		if (attributes != null) {
-			HttpServletRequest request = attributes.getRequest();
-			String uri = request.getRequestURI();
-
-			// Skip processing for admin endpoints
-			/*if (uri.startsWith("/admin") ||
-					uri.startsWith("/actuator") ||
-					uri.startsWith("/error") ||
-					uri.startsWith("/css") ||           // Add this
-					uri.startsWith("/fonts") ||         // Add this
-					uri.startsWith("/js") ||            // Add this
-					uri.startsWith("/static") ||        // Add this
-					uri.contains(".css") ||             // Add this
-					uri.contains(".woff") ||            // Add this
-					uri.contains(".woff2") ||           // Add this
-					uri.contains(".js")) {              // Add this
-				return new Environment(application, profile, label);
-			}*/
-		}
-
 		log.info("Finding configuration for application: {}, profile: {}, label: {}",
 				application, profile, label);
 
-		// Your existing logic continues here...
-		// ... rest of your existing code
-
-	// Handle null label - use default or fallback
-		String effectiveLabel = label != null ? label : "default";
-
-		// Route to Git repository if label indicates Git AND Git is enabled
-		if (isGitLabel(effectiveLabel)) {
-			if (gitEnvironmentRepository != null) {
-				log.info("Routing to Git repository for label: {}", effectiveLabel);
-				return gitEnvironmentRepository.findOne(application, profile, effectiveLabel);
-			} else {
-				log.warn("Git label '{}' requested but Git repository is disabled. Falling back to providers.", effectiveLabel);
-				// Fall through to provider-based logic
-			}
+		// Check if request explicitly asks for Git
+		if (gitEnvironmentRepository != null && isExplicitGitRequest(label)) {
+			log.info("Routing to Git repository for explicit Git label: {}", label);
+			return gitEnvironmentRepository.findOne(application, profile, label);
 		}
 
-		// Continue with existing provider-based logic for NEXL and others
-		return findOneUsingProviders(application, profile, effectiveLabel);
+		// Check if request explicitly asks for Nexl
+		if (isExplicitNexlRequest(label)) {
+			log.info("Routing to Nexl provider for label: {}", label);
+			return findOneUsingProviders(application, profile, label);
+		}
+
+		// Default routing based on label pattern
+		if (gitEnvironmentRepository != null && isGitBranchPattern(label)) {
+			log.info("Routing to Git repository for branch pattern: {}", label);
+			return gitEnvironmentRepository.findOne(application, profile, label);
+		}
+
+		// Default to providers (Nexl)
+		return findOneUsingProviders(application, profile, label);
 	}
 
-	private boolean isGitLabel(String label) {
-		// Handle null label safely
-		if (label == null) {
-			return false;
-		}
+	private boolean isExplicitNexlRequest(String label) {
+		return "nexl".equals(label) || "nexl-primary".equals(label);
+	}
 
-		return "git".equals(label) ||
-				"main".equals(label) ||
+	private boolean isExplicitGitRequest(String label) {
+		return "git".equals(label);
+	}
+
+	private boolean isGitBranchPattern(String label) {
+		if (label == null) return false;
+
+		return "main".equals(label) ||
 				"master".equals(label) ||
 				"develop".equals(label) ||
 				label.startsWith("feature/") ||
 				label.startsWith("release/") ||
-				label.matches("v\\d+\\.\\d+.*"); // version tags like v1.0, v2.1.3
+				label.matches("v\\d+\\.\\d+.*");
 	}
+
 
 	private Environment findOneUsingProviders(String application, String profile, String label) {
 		// Get the current HTTP request

@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.config.server.EnableConfigServer;
+import org.springframework.cloud.config.server.config.CompositeConfiguration;
+import org.springframework.cloud.config.server.config.EnvironmentRepositoryConfiguration;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentRepository;
 import org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentProperties;
@@ -21,7 +23,7 @@ import java.util.List;
 @Configuration
 @Profile("operation")
 @EnableConfigServer
-@Import({}) // Explicitly empty to avoid auto-imports
+@Import(CompositeConfiguration.class) // Import only the composite configuration
 public class ConfigServerConfiguration {
 
 	@Bean
@@ -41,18 +43,18 @@ public class ConfigServerConfiguration {
 		return new MultipleJGitEnvironmentRepository(environment, gitProperties, observationRegistry);
 	}
 
-	// Remove @Primary and use a different bean name to avoid conflicts
-	@Bean(name = "customEnvironmentRepository")
-	public EnvironmentRepository customEnvironmentRepository(
+	@Bean
+	@Primary
+	public EnvironmentRepository environmentRepository(
 			ObservationRegistry observationRegistry,
 			List<ConfigResourceProvider> providers,
 			@Autowired(required = false) MultipleJGitEnvironmentRepository gitEnvironmentRepository
 	) {
-		// Create the delegate with optional Git support
 		CustomEntryPointEnvironmentRepository delegate =
 				new CustomEntryPointEnvironmentRepository(providers, gitEnvironmentRepository);
 		return ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, delegate);
 	}
+
 
 	@Bean
 	public RestTemplate restTemplate() {
