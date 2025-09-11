@@ -1,4 +1,3 @@
-
 package com.edx.spring.config.central.server;
 
 import com.edx.spring.config.central.server.loader.ConfigResourceProvider;
@@ -10,24 +9,20 @@ import org.springframework.cloud.config.environment.PropertySource;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentRepository;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
-import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import jakarta.servlet.http.HttpServletRequest;
-
 import java.util.List;
 import java.util.Map;
 
-
 @Slf4j
-@Component
+// REMOVE @Component - let it be created only by @Bean
 public class CustomEntryPointEnvironmentRepository implements EnvironmentRepository {
 
 	private final List<ConfigResourceProvider> providers;
 	private final MultipleJGitEnvironmentRepository gitEnvironmentRepository;
 
-	// Constructor that Spring will use for dependency injection
 	public CustomEntryPointEnvironmentRepository(
 			List<ConfigResourceProvider> providers,
 			@Autowired(required = false) MultipleJGitEnvironmentRepository gitEnvironmentRepository) {
@@ -105,7 +100,6 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 	private Environment findOneUsingProviders(String application, String profile, String label) {
 		log.info("=== USING PROVIDERS ===");
 
-		// Get the current HTTP request
 		HttpServletRequest request = getCurrentHttpRequest();
 		if (request != null) {
 			log.info("Request URL: {}", request.getRequestURL());
@@ -116,7 +110,6 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 
 		Environment environment = new Environment(application, new String[]{profile}, label, null, null);
 
-		// Try each provider in order
 		for (ConfigResourceProvider provider : providers) {
 			log.info("Checking provider: {}", provider.getClass().getSimpleName());
 
@@ -126,7 +119,6 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 				try {
 					Map<String, Object> properties;
 
-					// If provider supports HTTP request, pass it
 					if (provider instanceof HttpRequestAwareConfigResourceProvider) {
 						log.info("Using HTTP-aware provider");
 						properties = ((HttpRequestAwareConfigResourceProvider) provider)
@@ -141,7 +133,6 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 						environment.add(new PropertySource(sourceName, properties));
 						log.info("Added {} properties from {}", properties.size(), sourceName);
 
-						// Return immediately after first successful provider
 						log.info("=== RETURNING ENVIRONMENT with {} property sources ===", environment.getPropertySources().size());
 						return environment;
 					} else {
@@ -167,12 +158,5 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 			log.debug("No HTTP request context available: {}", e.getMessage());
 			return null;
 		}
-	}
-
-	private String getHeadersAsString(HttpServletRequest request) {
-		StringBuilder headers = new StringBuilder();
-		request.getHeaderNames().asIterator().forEachRemaining(name ->
-				headers.append(name).append("=").append(request.getHeader(name)).append("; "));
-		return headers.toString();
 	}
 }

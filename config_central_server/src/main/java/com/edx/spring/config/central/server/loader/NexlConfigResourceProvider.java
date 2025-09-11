@@ -98,21 +98,34 @@ public class NexlConfigResourceProvider implements HttpRequestAwareConfigResourc
 
 	@Override
 	public boolean supports(String label) {
-		// Check if provider is enabled at runtime
-		if (!providerManager.isProviderEnabled(this.getClass().getSimpleName())) {
-			log.debug("Provider {} is disabled, skipping", this.getClass().getSimpleName());
+		// 1) Check if provider is enabled
+		if (!enabled) {
+			log.debug("Nexl provider disabled via property");
 			return false;
 		}
 
-		// Your existing logic
+		// 2) Explicit labels should always work when enabled
 		if ("nexl".equals(label) || "nexl-primary".equals(label)) {
+			log.debug("Supporting explicit nexl label: {}", label);
 			return true;
 		}
 
-		return providerManager.getPrimaryProvider().equals("nexl") &&
-				fallback && !isGitLabel(label);
-		// Only act as fallback if explicitly enabled
-//		return enabled && fallback && !isGitLabel(label);
+		// 3) Fallback behavior - only if enabled and not a git label
+		if (!fallback) {
+			return false;
+		}
+
+		if (isGitLabel(label)) {
+			return false;
+		}
+
+		// 4) Check provider manager for dynamic enablement (optional)
+		boolean managerEnabled = providerManager == null ||
+				providerManager.isProviderEnabled(this.getClass().getSimpleName());
+		boolean nexlIsPrimary = providerManager == null ||
+				"nexl".equals(providerManager.getPrimaryProvider());
+
+		return managerEnabled && nexlIsPrimary;
 	}
 
 	private boolean isGitLabel(String label) {
