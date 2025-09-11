@@ -12,6 +12,7 @@ spring:
   cloud:
     config:
       server:
+        bootstrap: false
         git:
           enabled: true
           uri: https://dev.azure.com/MY_ORG/DevopsConfig/_git/Config-Central-REPO
@@ -22,19 +23,23 @@ spring:
           timeout: 10
           username: MY_USER
           password: MY_PAT
+          overrides:
+            spring.cloud.config.server.git.order: 2  # Lower priority than Nexl
         # Disable default repository creation
         default-application-name: application
         default-profile: default
-        bootstrap: false
+
 
 config:
   providers:
     nexl:
       enabled: true
       base-url: http://nexl:8181
+      order: 1  # Higher priority
     git:
       enabled: true
       fallback: false  # Disable fallback to prevent interference
+      order: 2  # Higher priority
 
 # Disable health checks that might be causing conflicts
 management:
