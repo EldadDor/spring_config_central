@@ -22,7 +22,6 @@ import java.util.Objects;
  * to load properties, handling label-based routing and HTTP request awareness via RequestContextHolder.
  * It returns an Environment with PropertySources populated from the provider, or an empty Environment if not supported.
  */
-@Component
 @Slf4j
 public class NexlEnvironmentRepository implements EnvironmentRepository {
 

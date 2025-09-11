@@ -4,9 +4,14 @@ import com.edx.spring.config.central.server.CustomEntryPointEnvironmentRepositor
 import com.edx.spring.config.central.server.loader.ConfigResourceProvider;
 import io.micrometer.observation.ObservationRegistry;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.config.server.EnableConfigServer;
+import org.springframework.cloud.config.server.config.ConfigServerAutoConfiguration;
+import org.springframework.cloud.config.server.config.ConfigServerEncryptionConfiguration;
+import org.springframework.cloud.config.server.config.ConfigServerMvcConfiguration;
 import org.springframework.cloud.config.server.environment.*;
 import org.springframework.context.annotation.*;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -18,7 +23,6 @@ import java.util.List;
 @Configuration
 @Profile("operation")
 @Slf4j
-@EnableConfigServer
 public class ConfigServerConfiguration {
 
 	@Bean
