@@ -8,6 +8,7 @@ import org.springframework.cloud.config.environment.Environment;
 import org.springframework.cloud.config.environment.PropertySource;
 import org.springframework.cloud.config.server.environment.EnvironmentRepository;
 import org.springframework.cloud.config.server.environment.MultipleJGitEnvironmentRepository;
+import org.springframework.cloud.config.server.environment.NoSuchLabelException;
 import org.springframework.core.annotation.AnnotationAwareOrderComparator;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -16,8 +17,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 // REMOVE @Component - let it be created only by @Bean
+@Slf4j
 public class CustomEntryPointEnvironmentRepository implements EnvironmentRepository {
 
 	private final List<ConfigResourceProvider> providers;
@@ -25,12 +26,13 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 
 	public CustomEntryPointEnvironmentRepository(
 			List<ConfigResourceProvider> providers,
-			@Autowired(required = false) MultipleJGitEnvironmentRepository gitEnvironmentRepository) {
+			@Autowired(required = false) MultipleJGitEnvironmentRepository gitEnvironmentRepository) {  // Make this optional
 
 		this.providers = providers.stream()
 				.sorted(AnnotationAwareOrderComparator.INSTANCE)
 				.toList();
 		this.gitEnvironmentRepository = gitEnvironmentRepository;
+
 
 		log.info("=== CustomEntryPointEnvironmentRepository initialized ===");
 		log.info("Providers count: {}", providers.size());
@@ -48,22 +50,27 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 		log.info("=== REQUEST RECEIVED ===");
 		log.info("Application: {}, Profile: {}, Label: {}", application, profile, label);
 
-		// Check if request explicitly asks for Git
-		if (gitEnvironmentRepository != null && isExplicitGitRequest(label)) {
-			log.info("ROUTING TO: Git repository (explicit git label)");
-			return gitEnvironmentRepository.findOne(application, profile, label);
-		}
-
-		// Check if request explicitly asks for Nexl
+		// Explicit Nexl routing - don't touch Git
 		if (isExplicitNexlRequest(label)) {
 			log.info("ROUTING TO: Nexl providers (explicit nexl label)");
 			return findOneUsingProviders(application, profile, label);
 		}
 
-		// Default routing based on label pattern
+		// Explicit Git routing
+		if (gitEnvironmentRepository != null && isExplicitGitRequest(label)) {
+			log.info("ROUTING TO: Git repository (explicit git label)");
+			return gitEnvironmentRepository.findOne(application, profile, label);
+		}
+
+		// Pattern-based Git routing - only if Git is available and label matches
 		if (gitEnvironmentRepository != null && isGitBranchPattern(label)) {
 			log.info("ROUTING TO: Git repository (branch pattern match)");
-			return gitEnvironmentRepository.findOne(application, profile, label);
+			try {
+				return gitEnvironmentRepository.findOne(application, profile, label);
+			} catch (NoSuchLabelException e) {
+				log.warn("Git label not found: {}. Falling back to providers.", label);
+				return findOneUsingProviders(application, profile, label);  // Fallback if Git fails
+			}
 		}
 
 		// Default to providers (Nexl)

@@ -20,9 +20,11 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+
 @Configuration
 @Profile("operation")
 @Slf4j
+@EnableConfigServer
 public class ConfigServerConfiguration {
 
 	@Bean
@@ -32,7 +34,6 @@ public class ConfigServerConfiguration {
 		return new MultipleJGitEnvironmentProperties();
 	}
 
-	// THE ONLY EnvironmentRepository bean
 	@Bean
 	@Primary
 	public EnvironmentRepository environmentRepository(
@@ -41,24 +42,24 @@ public class ConfigServerConfiguration {
 			@Autowired(required = false) MultipleJGitEnvironmentProperties gitProps,
 			List<ConfigResourceProvider> providers) {
 
-		log.info("=== Creating THE ONLY EnvironmentRepository bean ===");
+		log.info("=== Creating SINGLE EnvironmentRepository bean ===");
 
-		// Create Git repository internally (not as a bean)
+		// Create Git repo internally only if enabled (not as a bean)
 		MultipleJGitEnvironmentRepository gitRepo = null;
 		if (gitProps != null) {
-			log.info("Initializing embedded MultipleJGitEnvironmentRepository");
+			log.info("Initializing internal MultipleJGitEnvironmentRepository");
 			gitRepo = new MultipleJGitEnvironmentRepository(springEnv, gitProps, observationRegistry);
 		} else {
-			log.info("Git repository support: DISABLED");
+			log.info("Git support: DISABLED");
 		}
 
-		CustomEntryPointEnvironmentRepository delegate =
-				new CustomEntryPointEnvironmentRepository(providers, gitRepo);
+		// Your custom router
+		CustomEntryPointEnvironmentRepository delegate = new CustomEntryPointEnvironmentRepository(providers, gitRepo);
 
-		EnvironmentRepository wrapped = ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, delegate);
-		log.info("Created wrapped repository: {}", wrapped.getClass().getName());
-		return wrapped;
+		// Wrap for observability
+		return ObservationEnvironmentRepositoryWrapper.wrap(observationRegistry, delegate);
 	}
+
 
 	@Bean
 	public RestTemplate restTemplate() {
