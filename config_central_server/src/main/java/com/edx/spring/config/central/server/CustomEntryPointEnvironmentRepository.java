@@ -50,26 +50,42 @@ public class CustomEntryPointEnvironmentRepository implements EnvironmentReposit
 
 	@Override
 	public Environment findOne(String application, String profile, String label) {
-		log.info("Finding configuration for application: {}, profile: {}, label: {}",
-				application, profile, label);
+		log.info("NexlRepo: Processing request - App: {}, Profile: {}, Label: {}", application, profile, label);
 
-		// Handle null label - use default or fallback
-		String effectiveLabel = label != null ? label : "default";
+		// Only handle requests that our providers support
+		Environment environment = new Environment(application, new String[]{profile}, label, null, null);
 
-		// Route to Git repository if label indicates Git AND Git is enabled
-		if (isGitLabel(effectiveLabel)) {
-			if (gitEnvironmentRepository != null) {
-				log.info("Routing to Git repository for label: {}", effectiveLabel);
-				return gitEnvironmentRepository.findOne(application, profile, effectiveLabel);
-			} else {
-				log.warn("Git label '{}' requested but Git repository is disabled. Falling back to providers.", effectiveLabel);
-				// Fall through to provider-based logic
+		HttpServletRequest request = getCurrentHttpRequest();
+
+		for (ConfigResourceProvider provider : providers) {
+			if (provider.supports(label)) {
+				log.info(">>> USING PROVIDER: {} for label: {}", provider.getClass().getSimpleName(), label);
+
+				try {
+					Map<String, Object> properties;
+					if (provider instanceof HttpRequestAwareConfigResourceProvider) {
+						properties = ((HttpRequestAwareConfigResourceProvider) provider)
+								.loadProperties(application, profile, label, request);
+					} else {
+						properties = provider.loadProperties(application, profile, label);
+					}
+
+					if (properties != null && !properties.isEmpty()) {
+						String sourceName = provider.getClass().getSimpleName() + "-" + label;
+						environment.add(new PropertySource(sourceName, properties));
+						log.info("Added {} properties from {}", properties.size(), sourceName);
+						return environment;
+					}
+				} catch (Exception e) {
+					log.error("Provider {} failed: {}", provider.getClass().getSimpleName(), e.getMessage(), e);
+				}
 			}
 		}
 
-		// Continue with existing provider-based logic for NEXL and others
-		return findOneUsingProviders(application, profile, effectiveLabel);
+		log.info("No providers matched for label: {}. Returning empty environment.", label);
+		return environment;
 	}
+
 
 	private boolean isGitLabel(String label) {
 		// Handle null label safely
