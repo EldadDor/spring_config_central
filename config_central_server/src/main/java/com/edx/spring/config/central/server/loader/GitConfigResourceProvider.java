@@ -19,11 +19,9 @@ public class GitConfigResourceProvider implements ConfigResourceProvider {
 
 	@Override
 	public boolean supports(String label) {
-		if (!enabled) {
-			return false;
-		}
 		// Only support explicit git labels, don't act as fallback
-		return "git".equals(label) || "master".equals(label) || "main".equals(label);
+        return enabled && ("git".equals(label) || "master".equals(label) ||
+                "main".equals(label) || fallback);
 	}
 
 
